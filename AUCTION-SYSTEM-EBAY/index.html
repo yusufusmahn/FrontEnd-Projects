@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Auction System-Ebay</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Auction System-Ebay</h1>
+    <div id="initialSection">
+        <button id="loginButton">Login</button>
+        <button id="registerButton">Register</button>
+    </div>
+
+    <div id="loginFormSection" class="form-section" style="display: none;">
+        <h2>Login</h2>
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email" required>
+            <input type="password" id="loginPassword" placeholder="Password" required>
+            <button type="submit">Login</button>
+            <button type="button" id="backToInitial">Back</button>
+        </form>
+        <p id="loginResult"></p>
+    </div>
+
+    <div id="registerFormSection" class="form-section" style="display: none;">
+        <h2>Register</h2>
+        <form id="userForm">
+            <input type="text" id="username" placeholder="Username" required>
+            <input type="email" id="email" placeholder="Email" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <input type="text" id="role" placeholder="Role (SELLER/BUYER)" required>
+            <button type="submit">Create User</button>
+            <button type="button" id="backToInitialReg">Back</button>
+        </form>
+        <p id="userResult"></p>
+    </div>
+
+
+
+    <div id="loggedInSection" style="display: none;">
+        <h2>Welcome, <span id="userName"></span> (Role: <span id="userRole"></span>)!</h2>
+        <button id="logoutButton">Logout</button>
+
+
+        <div id="viewButtons" class="button-group">
+            <button id="viewTransactionsButton" class="action-button">Transactions</button>
+            <button id="viewActiveTransactionsButton" class="action-button">Active Transactions</button>
+            <button id="viewActiveAuctionsButton" class="action-button">Active Auctions</button>
+            <button id="viewActiveBidsButton" class="action-button">Your Active Bids</button>
+            <button id="viewAuctionsButton" class="action-button">Auctions</button>
+            <button id="viewSellerTransactionsButton" class="action-button">Seller Transactions</button>
+            <button id="viewSellerActiveTransactionsButton" class="action-button">Seller Active Transactions</button>
+            <button id="createAuctionButton" class="action-button">Create Auction</button>
+            <button id="placeBidButton" class="action-button">Place Bid</button>
+            <button id="personalInfoButton" class="action-button">Profile</button>
+        </div>
+
+
+        <div id="auctionFormSection" class="section">
+            <h3>Create Auction</h3>
+            <form id="auctionForm">
+                <input type="text" id="auctionTitle" placeholder="Title" required>
+                <input type="text" id="auctionDescription" placeholder="Description" required>
+                <input type="number" id="startingBid" placeholder="Starting Bid" step="0.01" required>
+                <input type="number" id="buyItNowPrice" placeholder="Buy It Now Price" step="0.01">
+                <input type="datetime-local" id="endTime" required>
+                <input type="hidden" id="sellerId" value="">
+                <button type="submit">Create Auction</button>
+            </form>
+            <div id="auctionResult" class="result-box"></div>
+        </div>
+
+
+        <div id="bidFormSection" class="section">
+            <h3>Place Bid</h3>
+            <form id="bidForm">
+                <input type="number" id="bidAmount" placeholder="Bid Amount" step="0.01" required>
+                <input type="text" id="auctionItemId" placeholder="Auction Item ID" required>
+                <input type="hidden" id="bidderId" value="">
+                <button type="submit">Place Bid</button>
+            </form>
+            <div id="bidResult" class="result-box"></div>
+        </div>
+
+
+        <div id="personalInfoSection" class="section">
+            <h3>Personal Information</h3>
+            <form id="updateRoleForm">
+                <input type="hidden" id="updateUserId" value="">
+                <input type="text" id="newRole" placeholder="New Role (SELLER/BUYER)" required>
+                <button type="submit">Update Role</button>
+            </form>
+            <p id="updateRoleResult"></p>
+            
+            <h3>Get User by Email</h3>
+            <form id="getUserByEmailForm">
+                <input type="email" id="getEmail" placeholder="Your Email" readonly>
+                <input type="hidden" id="getUserId" value="">
+                <button type="submit">Get User</button>
+            </form>
+            <div id="userByEmailDetails" class="list"></div>
+        </div>
+
+
+        <div id="sellerAuctions" class="section">
+            <h3>View Your Auctions</h3>
+            <div id="sellerAuctionsContent"></div> 
+        </div>
+
+
+        <div id="activeAuctions" class="section">
+            <h3>View Active Auctions</h3>
+            <div id="activeAuctionsContent"></div> 
+        </div>
+
+
+        <div id="activeBids" class="section">
+            <h3>View Your Active Bids</h3>
+            <div id="activeBidsContent"></div> 
+        </div>
+
+
+        <div id="transactions" class="section">
+            <h3>View Your Transactions</h3>
+            <div id="transactionsContent"></div> 
+        </div>
+
+
+        <div id="activeTransactions" class="section">
+            <h3>View Your Active Transactions</h3>
+            <div id="activeTransactionsContent"></div> 
+        </div>
+
+
+        <div id="sellerTransactions" class="section">
+            <h3>View Your Transactions</h3>
+            <div id="sellerTransactionsContent"></div> 
+        </div>
+
+
+        <div id="sellerActiveTransactions" class="section">
+            <h3>View Your Active Transactions</h3>
+            <div id="sellerActiveTransactionsContent"></div> 
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
