@@ -32,7 +32,7 @@ document.getElementById('backToInitial').addEventListener('click', showInitialSe
 
 document.getElementById('backToInitialReg').addEventListener('click', showInitialSection);
 
-// user registration
+
 document.getElementById('userForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     let user = {
@@ -59,7 +59,7 @@ document.getElementById('userForm').addEventListener('submit', async function(ev
     }
 });
 
-//login
+
 document.getElementById('loginForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     let loginRequest = {
@@ -93,7 +93,7 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
     }
 });
 
-//logout
+
 document.getElementById('logoutButton').addEventListener('click', function() {
     currentUserId = null;
     currentUsername = null;
@@ -104,7 +104,7 @@ document.getElementById('logoutButton').addEventListener('click', function() {
     clearAllResults();
 });
 
-//auction creation
+
 document.getElementById('auctionForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     if (currentUserId === null) {
@@ -141,7 +141,7 @@ document.getElementById('auctionForm').addEventListener('submit', async function
     }
 });
 
-// bid placement
+
 document.getElementById('bidForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     if (currentUserId === null) {
@@ -219,7 +219,7 @@ document.getElementById('bidForm').addEventListener('submit', async function(eve
     }
 });
 
-// role update
+
 document.getElementById('updateRoleForm').addEventListener('submit', async function(event) {
     event.preventDefault();
     let newRole = document.getElementById('newRole').value.toUpperCase();
@@ -247,3 +247,418 @@ document.getElementById('updateRoleForm').addEventListener('submit', async funct
         document.getElementById('updateRoleResult').innerHTML = '<div class="result-box error">' + (result.message || JSON.stringify(result)) + '</div>';
     }
 });
+
+
+document.getElementById('getUserByEmailForm').addEventListener('submit', async function(event) {
+    event.preventDefault();
+    let inputEmail = document.getElementById('getEmail').value;
+    if (inputEmail !== currentEmail) {
+        document.getElementById('userByEmailDetails').innerHTML = '<div class="list-item error">You can only view your own details.</div>';
+        return;
+    }
+    let response = await fetch(BASE_URL + '/api/users/email/' + encodeURIComponent(inputEmail), {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+    });
+    let result = await response.json();
+    let detailsDiv = document.getElementById('userByEmailDetails');
+    if (response.status === 200 && result.data) {
+        detailsDiv.innerHTML = '<div class="list-item">User: ' + result.data.username + ', ID: ' + result.data.userId + ', Role: ' + result.data.role + '</div>';
+    } else {
+        detailsDiv.innerHTML = '<div class="list-item error">Status: ' + response.status + ', ' + (result.message || 'User not found') + '</div>';
+    }
+});
+
+
+document.getElementById('viewAuctionsButton').addEventListener('click', async function() {
+    if (currentRole !== 'SELLER') return;
+    try {
+        let response = await fetch(BASE_URL + '/api/auction-items/seller/' + currentUserId, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        let result = await response.json();
+        let contentDiv = document.getElementById('sellerAuctionsContent');
+        contentDiv.innerHTML = ''; 
+        clearAllResults();
+        let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
+        htmlContent += '<table><thead><tr><th>Title</th><th>ID</th><th>Starting Bid</th><th>Buy It Now Price</th><th>Current Bid</th><th>End Time</th><th>Status</th></tr></thead><tbody>';
+        if (result.data && result.data.length > 0) {
+            for (let auction of result.data) {
+                htmlContent += '<tr>';
+                htmlContent += '<td>' + auction.title + '</td>';
+                htmlContent += '<td>' + auction.itemId + '</td>';
+                htmlContent += '<td>$' + auction.startingBid + '</td>';
+                htmlContent += '<td>' + (auction.buyItNowPrice ? '$' + auction.buyItNowPrice : 'N/A') + '</td>';
+                htmlContent += '<td>$' + (auction.currentBid || auction.startingBid) + '</td>';
+                htmlContent += '<td>' + new Date(auction.endTime).toLocaleString() + '</td>';
+                htmlContent += '<td>' + (auction.status || (new Date(auction.endTime) > new Date() ? 'Active' : 'Closed')) + '</td>';
+                htmlContent += '</tr>';
+            }
+        } else {
+            htmlContent += '<tr><td colspan="7"><div class="list-item">No data available</div></td></tr>';
+        }
+        htmlContent += '</tbody></table>';
+        contentDiv.innerHTML = htmlContent; 
+        showSection('sellerAuctions');
+    } catch (error) {
+        document.getElementById('sellerAuctionsContent').innerHTML = '<div class="list-item error">Failed to load auctions</div>';
+    }
+    showForm('sellerAuctions', 'viewAuctionsButton');
+});
+
+
+document.getElementById('viewActiveAuctionsButton').addEventListener('click', async function() {
+    if (currentRole !== 'BUYER') return;
+    try {
+        let response = await fetch(BASE_URL + '/api/auction-items/active', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        let result = await response.json();
+        let contentDiv = document.getElementById('activeAuctionsContent');
+        contentDiv.innerHTML = ''; 
+        clearAllResults();
+        let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
+        htmlContent += '<table><thead><tr><th>Title</th><th>ID</th><th>Starting Bid</th><th>Buy It Now Price</th><th>Current Bid</th><th>End Time</th><th>Status</th></tr></thead><tbody>';
+        if (result.data && result.data.length > 0) {
+            for (let auction of result.data) {
+                htmlContent += '<tr>';
+                htmlContent += '<td>' + auction.title + '</td>';
+                htmlContent += '<td>' + auction.itemId + '</td>';
+                htmlContent += '<td>$' + auction.startingBid + '</td>';
+                htmlContent += '<td>' + (auction.buyItNowPrice ? '$' + auction.buyItNowPrice : 'N/A') + '</td>';
+                htmlContent += '<td>$' + (auction.currentBid || auction.startingBid) + '</td>';
+                htmlContent += '<td>' + new Date(auction.endTime).toLocaleString() + '</td>';
+                htmlContent += '<td>' + (auction.status || (new Date(auction.endTime) > new Date() ? 'Active' : 'Closed')) + '</td>';
+                htmlContent += '</tr>';
+            }
+        } else {
+            htmlContent += '<tr><td colspan="7"><div class="list-item">No data available</div></td></tr>';
+        }
+        htmlContent += '</tbody></table>';
+        contentDiv.innerHTML = htmlContent; 
+        showSection('activeAuctions');
+    } catch (error) {
+        document.getElementById('activeAuctionsContent').innerHTML = '<div class="list-item error">Failed to load active auctions</div>';
+    }
+    showForm('activeAuctions', 'viewActiveAuctionsButton');
+});
+
+
+document.getElementById('viewActiveBidsButton').addEventListener('click', async function() {
+    if (currentRole !== 'BUYER') return;
+    try {
+        let response = await fetch(BASE_URL + '/api/bids/active?bidderId=' + currentUserId, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        let result = await response.json();
+        let contentDiv = document.getElementById('activeBidsContent');
+        contentDiv.innerHTML = ''; 
+        clearAllResults();
+        let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
+        htmlContent += '<table><thead><tr><th>Auction ID</th><th>Bid Amount</th><th>Status</th><th>Placed Time</th></tr></thead><tbody>';
+        if (result.data && result.data.length > 0) {
+            for (let bid of result.data) {
+                htmlContent += '<tr>';
+                htmlContent += '<td>' + bid.auctionItemId + '</td>';
+                htmlContent += '<td>$' + bid.bidAmount + '</td>';
+                htmlContent += '<td>' + (bid.status || (new Date() < new Date(bid.auctionEndTime || Infinity) ? 'Active' : 'Closed')) + '</td>';
+                htmlContent += '<td>' + new Date(bid.bidTime).toLocaleString() + '</td>';
+                htmlContent += '</tr>';
+            }
+        } else {
+            htmlContent += '<tr><td colspan="4"><div class="list-item">No data available</div></td></tr>';
+        }
+        htmlContent += '</tbody></table>';
+        contentDiv.innerHTML = htmlContent; 
+        showSection('activeBids');
+    } catch (error) {
+        document.getElementById('activeBidsContent').innerHTML = '<div class="list-item error">Failed to load active bids</div>';
+    }
+    showForm('activeBids', 'viewActiveBidsButton');
+});
+
+
+document.getElementById('viewTransactionsButton').addEventListener('click', async function() {
+    if (currentRole !== 'BUYER') return;
+    try {
+        let response = await fetch(BASE_URL + '/api/transactions/user/' + currentUserId, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        let result = await response.json();
+        let contentDiv = document.getElementById('transactionsContent');
+        contentDiv.innerHTML = ''; 
+        clearAllResults();
+        let uniqueTransactions = {};
+        for (let transaction of result.data) {
+            if (!uniqueTransactions[transaction.auctionItemId] || new Date(uniqueTransactions[transaction.auctionItemId].transactionTime) < new Date(transaction.transactionTime)) {
+                uniqueTransactions[transaction.auctionItemId] = transaction;
+            }
+        }
+        let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
+        htmlContent += '<table><thead><tr><th>Transaction ID</th><th>Auction ID</th><th>Title</th><th>Final Price</th><th>Transaction Time</th><th>Status</th></tr></thead><tbody>';
+        let transactionsArray = Object.values(uniqueTransactions);
+        if (transactionsArray.length > 0) {
+            for (let transaction of transactionsArray) {
+                let auctionResponse = await fetch(BASE_URL + '/api/auction-items/' + transaction.auctionItemId);
+                let auctionResult = await auctionResponse.json();
+                htmlContent += '<tr>';
+                htmlContent += '<td>' + transaction.transactionId + '</td>';
+                htmlContent += '<td>' + transaction.auctionItemId + '</td>';
+                htmlContent += '<td>' + (auctionResult.data ? auctionResult.data.title : 'N/A') + '</td>';
+                htmlContent += '<td>$' + transaction.finalPrice + '</td>';
+                htmlContent += '<td>' + new Date(transaction.transactionTime).toLocaleString() + '</td>';
+                htmlContent += '<td>' + (auctionResult.data ? auctionResult.data.status : 'N/A') + '</td>';
+                htmlContent += '</tr>';
+            }
+        } else {
+            htmlContent += '<tr><td colspan="6"><div class="list-item">No transactions found</div></td></tr>';
+        }
+        htmlContent += '</tbody></table>';
+        contentDiv.innerHTML = htmlContent; 
+        showSection('transactions');
+    } catch (error) {
+        document.getElementById('transactionsContent').innerHTML = '<div class="list-item error">Failed to load transactions</div>';
+    }
+    showForm('transactions', 'viewTransactionsButton');
+});
+
+
+document.getElementById('viewActiveTransactionsButton').addEventListener('click', async function() {
+    if (currentRole !== 'BUYER') return;
+    try {
+        let bidsResponse = await fetch(BASE_URL + '/api/bids/active?bidderId=' + currentUserId, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        let bidsResult = await bidsResponse.json();
+        let contentDiv = document.getElementById('activeTransactionsContent');
+        contentDiv.innerHTML = ''; 
+        clearAllResults();
+        let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
+        htmlContent += '<table><thead><tr><th>Auction ID</th><th>Title</th><th>Current Bid</th><th>End Time</th><th>Status</th></tr></thead><tbody>';
+        if (bidsResult.data && bidsResult.data.length > 0) {
+            for (let bid of bidsResult.data) {
+                let auctionResponse = await fetch(BASE_URL + '/api/auction-items/' + bid.auctionItemId);
+                let auctionResult = await auctionResponse.json();
+                if (auctionResult.data) {
+                    htmlContent += '<tr>';
+                    htmlContent += '<td>' + bid.auctionItemId + '</td>';
+                    htmlContent += '<td>' + auctionResult.data.title + '</td>';
+                    htmlContent += '<td>$' + (auctionResult.data.currentBid || auctionResult.data.startingBid) + '</td>';
+                    htmlContent += '<td>' + new Date(auctionResult.data.endTime).toLocaleString() + '</td>';
+                    htmlContent += '<td>' + (auctionResult.data.status || (new Date(auctionResult.data.endTime) > new Date() ? 'Active' : 'Closed')) + '</td>';
+                    htmlContent += '</tr>';
+                }
+            }
+        } else {
+            htmlContent += '<tr><td colspan="5"><div class="list-item">No active transactions found</div></td></tr>';
+        }
+        htmlContent += '</tbody></table>';
+        contentDiv.innerHTML = htmlContent;
+        showSection('activeTransactions');
+    } catch (error) {
+        document.getElementById('activeTransactionsContent').innerHTML = '<div class="list-item error">Failed to load active transactions</div>';
+    }
+    showForm('activeTransactions', 'viewActiveTransactionsButton');
+});
+
+
+document.getElementById('viewSellerTransactionsButton').addEventListener('click', async function() {
+    if (currentRole !== 'SELLER') return;
+    try {
+        let response = await fetch(BASE_URL + '/api/transactions/user/' + currentUserId, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        let result = await response.json();
+        let contentDiv = document.getElementById('sellerTransactionsContent');
+        contentDiv.innerHTML = ''; 
+        clearAllResults();
+        let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
+        htmlContent += '<table><thead><tr><th>Transaction ID</th><th>Auction ID</th><th>Title</th><th>Buyer ID</th><th>Final Price</th><th>Transaction Time</th><th>Status</th></tr></thead><tbody>';
+        if (result.data && result.data.length > 0) {
+            for (let transaction of result.data) {
+                let auctionResponse = await fetch(BASE_URL + '/api/auction-items/' + transaction.auctionItemId);
+                let auctionResult = await auctionResponse.json();
+                htmlContent += '<tr>';
+                htmlContent += '<td>' + transaction.transactionId + '</td>';
+                htmlContent += '<td>' + transaction.auctionItemId + '</td>';
+                htmlContent += '<td>' + (auctionResult.data ? auctionResult.data.title : 'N/A') + '</td>';
+                htmlContent += '<td>' + transaction.buyerId + '</td>';
+                htmlContent += '<td>$' + transaction.finalPrice + '</td>';
+                htmlContent += '<td>' + new Date(transaction.transactionTime).toLocaleString() + '</td>';
+                htmlContent += '<td>' + (auctionResult.data ? auctionResult.data.status : 'N/A') + '</td>';
+                htmlContent += '</tr>';
+            }
+        } else {
+            htmlContent += '<tr><td colspan="7"><div class="list-item">No transactions found</div></td></tr>';
+        }
+        htmlContent += '</tbody></table>';
+        contentDiv.innerHTML = htmlContent; 
+        showSection('sellerTransactions');
+    } catch (error) {
+        document.getElementById('sellerTransactionsContent').innerHTML = '<div class="list-item error">Failed to load transactions</div>';
+    }
+    showForm('sellerTransactions', 'viewSellerTransactionsButton');
+});
+
+
+document.getElementById('viewSellerActiveTransactionsButton').addEventListener('click', async function() {
+    if (currentRole !== 'SELLER') return;
+    try {
+        let auctionsResponse = await fetch(BASE_URL + '/api/auction-items/seller/' + currentUserId, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        let auctionsResult = await auctionsResponse.json();
+        let contentDiv = document.getElementById('sellerActiveTransactionsContent');
+        contentDiv.innerHTML = ''; 
+        clearAllResults();
+        let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
+        htmlContent += '<table><thead><tr><th>Auction ID</th><th>Title</th><th>Buyer ID</th><th>Bid Amount</th><th>End Time</th><th>Status</th></tr></thead><tbody>';
+        if (auctionsResult.data && auctionsResult.data.length > 0) {
+            for (let auction of auctionsResult.data) {
+                let bidsResponse = await fetch(BASE_URL + '/api/bids/auction/' + auction.itemId);
+                let bidsResult = await bidsResponse.json();
+                if (bidsResult.data && bidsResult.data.length > 0 && new Date(auction.endTime) > new Date()) {
+                    for (let bid of bidsResult.data) {
+                        htmlContent += '<tr>';
+                        htmlContent += '<td>' + auction.itemId + '</td>';
+                        htmlContent += '<td>' + auction.title + '</td>';
+                        htmlContent += '<td>' + bid.bidderId + '</td>';
+                        htmlContent += '<td>$' + bid.bidAmount + '</td>';
+                        htmlContent += '<td>' + new Date(auction.endTime).toLocaleString() + '</td>';
+                        htmlContent += '<td>' + (auction.status || (new Date(auction.endTime) > new Date() ? 'Active' : 'Closed')) + '</td>';
+                        htmlContent += '</tr>';
+                    }
+                }
+            }
+        } else {
+            htmlContent += '<tr><td colspan="6"><div class="list-item">No active transactions found</div></td></tr>';
+        }
+        htmlContent += '</tbody></table>';
+        contentDiv.innerHTML = htmlContent; 
+        showSection('sellerActiveTransactions');
+    } catch (error) {
+        document.getElementById('sellerActiveTransactionsContent').innerHTML = '<div class="list-item error">Failed to load active transactions</div>';
+    }
+    showForm('sellerActiveTransactions', 'viewSellerActiveTransactionsButton');
+});
+
+
+document.getElementById('createAuctionButton').addEventListener('click', function() {
+    if (currentRole !== 'SELLER') return;
+    showForm('auctionFormSection', 'createAuctionButton');
+});
+
+
+document.getElementById('placeBidButton').addEventListener('click', function() {
+    if (currentRole !== 'BUYER') return;
+    showForm('bidFormSection', 'placeBidButton');
+});
+
+
+document.getElementById('personalInfoButton').addEventListener('click', function() {
+    showForm('personalInfoSection', 'personalInfoButton');
+});
+
+
+document.addEventListener('click', function(event) {
+    if (event.target.id === 'backToMain') {
+        showSection(''); 
+        updateViewButtons();
+        let buttons = document.getElementById('viewButtons').getElementsByClassName('action-button');
+        for (let button of buttons) {
+            button.classList.remove('active');
+        }
+    }
+});
+
+
+function showSection(sectionId) {
+    let allSections = document.getElementsByClassName('section');
+    for (let section of allSections) {
+        section.style.display = 'none'; 
+    }
+    if (sectionId) {
+        let section = document.getElementById(sectionId);
+        if (section) {
+            section.style.display = 'block'; 
+        }
+    }
+}
+
+
+function showForm(formId, buttonId) {
+    let allSections = document.getElementsByClassName('section');
+    for (let section of allSections) {
+        section.style.display = 'none';
+    }
+
+
+    let form = document.getElementById(formId);
+    if (form) {
+        form.style.display = 'block';
+        let backButton = form.querySelector('.back-button');
+        if (!backButton) {
+            let backButtonHTML = '<button class="back-button" id="backToMain">Back</button>';
+            form.insertAdjacentHTML('beforeend', backButtonHTML);
+        }
+    }
+
+
+    let buttons = document.getElementById('viewButtons').getElementsByClassName('action-button');
+    for (let button of buttons) {
+        button.classList.remove('active');
+    }
+
+
+    if (buttonId) {
+        let activeButton = document.getElementById(buttonId);
+        if (activeButton) {
+            activeButton.classList.add('active');
+        }
+    }
+}
+
+
+function updateViewButtons() {
+    let viewButtons = document.getElementById('viewButtons').getElementsByTagName('button');
+    for (let button of viewButtons) {
+        button.style.display = 'none';
+    }
+    if (currentRole === 'SELLER') {
+        document.getElementById('viewAuctionsButton').style.display = 'block';
+        document.getElementById('viewSellerTransactionsButton').style.display = 'block';
+        document.getElementById('viewSellerActiveTransactionsButton').style.display = 'block';
+        document.getElementById('createAuctionButton').style.display = 'block';
+    } else if (currentRole === 'BUYER') {
+        document.getElementById('viewTransactionsButton').style.display = 'block';
+        document.getElementById('viewActiveTransactionsButton').style.display = 'block';
+        document.getElementById('viewActiveAuctionsButton').style.display = 'block';
+        document.getElementById('viewActiveBidsButton').style.display = 'block';
+        document.getElementById('placeBidButton').style.display = 'block';
+    }
+    document.getElementById('personalInfoButton').style.display = 'block';
+}
+
+
+function clearAllResults() {
+    document.getElementById('loginResult').textContent = '';
+    document.getElementById('userResult').textContent = '';
+    document.getElementById('auctionResult').innerHTML = '';
+    document.getElementById('bidResult').innerHTML = '';
+    document.getElementById('updateRoleResult').innerHTML = '';
+    document.getElementById('userByEmailDetails').innerHTML = '';
+    document.getElementById('sellerAuctionsContent').innerHTML = '';
+    document.getElementById('activeAuctionsContent').innerHTML = '';
+    document.getElementById('activeBidsContent').innerHTML = '';
+    document.getElementById('transactionsContent').innerHTML = '';
+    document.getElementById('activeTransactionsContent').innerHTML = '';
+    document.getElementById('sellerTransactionsContent').innerHTML = '';
+    document.getElementById('sellerActiveTransactionsContent').innerHTML = '';
+}
