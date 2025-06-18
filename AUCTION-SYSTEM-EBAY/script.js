@@ -215,7 +215,7 @@ document.getElementById('bidForm').addEventListener('submit', async function(eve
             }
         }
     } else {
-        document.getElementById('bidResult').innerHTML = '<div class="result-box error">Bid failed: ' + (bidResult.message || 'Invalid bid') + '</div>';
+        document.getElementById('bidResult').innerHTML = '<div class="result-box error">Bid failed: ' + (bidResult.message || 'Invalid bid: Confirm that bid amount is higher than current bid') + '</div>';
     }
 });
 
@@ -345,7 +345,6 @@ document.getElementById('viewActiveAuctionsButton').addEventListener('click', as
     showForm('activeAuctions', 'viewActiveAuctionsButton');
 });
 
-
 document.getElementById('viewActiveBidsButton').addEventListener('click', async function() {
     if (currentRole !== 'BUYER') return;
     try {
@@ -361,15 +360,20 @@ document.getElementById('viewActiveBidsButton').addEventListener('click', async 
         htmlContent += '<table><thead><tr><th>Auction ID</th><th>Bid Amount</th><th>Status</th><th>Placed Time</th></tr></thead><tbody>';
         if (result.data && result.data.length > 0) {
             for (let bid of result.data) {
-                htmlContent += '<tr>';
-                htmlContent += '<td>' + bid.auctionItemId + '</td>';
-                htmlContent += '<td>$' + bid.bidAmount + '</td>';
-                htmlContent += '<td>' + (bid.status || (new Date() < new Date(bid.auctionEndTime || Infinity) ? 'Active' : 'Closed')) + '</td>';
-                htmlContent += '<td>' + new Date(bid.bidTime).toLocaleString() + '</td>';
-                htmlContent += '</tr>';
+                let auctionResponse = await fetch(BASE_URL + '/api/auction-items/' + bid.auctionItemId);
+                let auctionResult = await auctionResponse.json();
+                if (auctionResult.data && auctionResult.data.status !== 'CLOSED' && new Date(auctionResult.data.endTime) > new Date()) {
+                    let status = 'Active';
+                    htmlContent += '<tr>';
+                    htmlContent += '<td>' + bid.auctionItemId + '</td>';
+                    htmlContent += '<td>$' + bid.bidAmount + '</td>';
+                    htmlContent += '<td>' + status + '</td>';
+                    htmlContent += '<td>' + new Date(bid.bidTime).toLocaleString() + '</td>';
+                    htmlContent += '</tr>';
+                }
             }
         } else {
-            htmlContent += '<tr><td colspan="4"><div class="list-item">No data available</div></td></tr>';
+            htmlContent += '<tr><td colspan="4"><div class="list-item">No active bids available</div></td></tr>';
         }
         htmlContent += '</tbody></table>';
         contentDiv.innerHTML = htmlContent; 
@@ -440,21 +444,27 @@ document.getElementById('viewActiveTransactionsButton').addEventListener('click'
         clearAllResults();
         let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
         htmlContent += '<table><thead><tr><th>Auction ID</th><th>Title</th><th>Current Bid</th><th>End Time</th><th>Status</th></tr></thead><tbody>';
+        let uniqueAuctions = {};
         if (bidsResult.data && bidsResult.data.length > 0) {
             for (let bid of bidsResult.data) {
                 let auctionResponse = await fetch(BASE_URL + '/api/auction-items/' + bid.auctionItemId);
                 let auctionResult = await auctionResponse.json();
-                if (auctionResult.data) {
-                    htmlContent += '<tr>';
-                    htmlContent += '<td>' + bid.auctionItemId + '</td>';
-                    htmlContent += '<td>' + auctionResult.data.title + '</td>';
-                    htmlContent += '<td>$' + (auctionResult.data.currentBid || auctionResult.data.startingBid) + '</td>';
-                    htmlContent += '<td>' + new Date(auctionResult.data.endTime).toLocaleString() + '</td>';
-                    htmlContent += '<td>' + (auctionResult.data.status || (new Date(auctionResult.data.endTime) > new Date() ? 'Active' : 'Closed')) + '</td>';
-                    htmlContent += '</tr>';
+                if (auctionResult.data && auctionResult.data.status !== 'CLOSED' && new Date(auctionResult.data.endTime) > new Date()) {
+                    let auctionId = bid.auctionItemId;
+                    if (!uniqueAuctions[auctionId]) {
+                        uniqueAuctions[auctionId] = true;
+                        htmlContent += '<tr>';
+                        htmlContent += '<td>' + bid.auctionItemId + '</td>';
+                        htmlContent += '<td>' + auctionResult.data.title + '</td>';
+                        htmlContent += '<td>$' + (auctionResult.data.currentBid || auctionResult.data.startingBid) + '</td>';
+                        htmlContent += '<td>' + new Date(auctionResult.data.endTime).toLocaleString() + '</td>';
+                        htmlContent += '<td>Active</td>';
+                        htmlContent += '</tr>';
+                    }
                 }
             }
-        } else {
+        }
+        if (Object.keys(uniqueAuctions).length === 0) {
             htmlContent += '<tr><td colspan="5"><div class="list-item">No active transactions found</div></td></tr>';
         }
         htmlContent += '</tbody></table>';
@@ -478,10 +488,18 @@ document.getElementById('viewSellerTransactionsButton').addEventListener('click'
         let contentDiv = document.getElementById('sellerTransactionsContent');
         contentDiv.innerHTML = ''; 
         clearAllResults();
+        let uniqueTransactions = {};
+        for (let transaction of result.data) {
+            let auctionId = transaction.auctionItemId;
+            if (!uniqueTransactions[auctionId] || uniqueTransactions[auctionId].finalPrice < transaction.finalPrice) {
+                uniqueTransactions[auctionId] = transaction;
+            }
+        }
         let htmlContent = '<button class="back-button" id="backToMain">Back</button>';
         htmlContent += '<table><thead><tr><th>Transaction ID</th><th>Auction ID</th><th>Title</th><th>Buyer ID</th><th>Final Price</th><th>Transaction Time</th><th>Status</th></tr></thead><tbody>';
-        if (result.data && result.data.length > 0) {
-            for (let transaction of result.data) {
+        let transactionsArray = Object.values(uniqueTransactions);
+        if (transactionsArray.length > 0) {
+            for (let transaction of transactionsArray) {
                 let auctionResponse = await fetch(BASE_URL + '/api/auction-items/' + transaction.auctionItemId);
                 let auctionResult = await auctionResponse.json();
                 htmlContent += '<tr>';
@@ -506,7 +524,6 @@ document.getElementById('viewSellerTransactionsButton').addEventListener('click'
     showForm('sellerTransactions', 'viewSellerTransactionsButton');
 });
 
-
 document.getElementById('viewSellerActiveTransactionsButton').addEventListener('click', async function() {
     if (currentRole !== 'SELLER') return;
     try {
@@ -524,7 +541,7 @@ document.getElementById('viewSellerActiveTransactionsButton').addEventListener('
             for (let auction of auctionsResult.data) {
                 let bidsResponse = await fetch(BASE_URL + '/api/bids/auction/' + auction.itemId);
                 let bidsResult = await bidsResponse.json();
-                if (bidsResult.data && bidsResult.data.length > 0 && new Date(auction.endTime) > new Date()) {
+                if (bidsResult.data && bidsResult.data.length > 0 && new Date(auction.endTime) > new Date() && auction.status !== 'CLOSED') {
                     for (let bid of bidsResult.data) {
                         htmlContent += '<tr>';
                         htmlContent += '<td>' + auction.itemId + '</td>';
@@ -532,7 +549,7 @@ document.getElementById('viewSellerActiveTransactionsButton').addEventListener('
                         htmlContent += '<td>' + bid.bidderId + '</td>';
                         htmlContent += '<td>$' + bid.bidAmount + '</td>';
                         htmlContent += '<td>' + new Date(auction.endTime).toLocaleString() + '</td>';
-                        htmlContent += '<td>' + (auction.status || (new Date(auction.endTime) > new Date() ? 'Active' : 'Closed')) + '</td>';
+                        htmlContent += '<td>Active</td>';
                         htmlContent += '</tr>';
                     }
                 }
