@@ -662,3 +662,4 @@ function clearAllResults() {
     document.getElementById('sellerTransactionsContent').innerHTML = '';
     document.getElementById('sellerActiveTransactionsContent').innerHTML = '';
 }
+
