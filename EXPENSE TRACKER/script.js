@@ -110,3 +110,64 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
         showMessage(`Error registering user: ${error.message}`, 'error');
     }
 });
+
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    try {
+        const loginResponse = await fetch(`${BASE_URL}/users/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        const loginResult = await loginResponse.json();
+        if (!loginResult.success) {
+            showMessage(loginResult.data || 'Login failed', 'error');
+            return;
+        }
+        const userResponse = await fetch(`${BASE_URL}/users/${email}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const userResult = await userResponse.json();
+        if (userResult.success) {
+            currentUser = {
+                email,
+                userId: userResult.data.id || 'unknown',
+                username: userResult.data.username || 'User'
+            };
+            showExpenseSection();
+            showMessage('Login successful!', 'success');
+        } else {
+            showMessage(userResult.data || 'Failed to fetch user data', 'error');
+        }
+    } catch (error) {
+        showMessage(`Error logging in: ${error.message}`, 'error');
+    }
+});
+
+document.getElementById('add-expense-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const amount = parseFloat(document.getElementById('expense-amount').value);
+    const date = document.getElementById('expense-date').value + ':00';
+    const category = document.getElementById('expense-category').value;
+    const description = document.getElementById('expense-description').value;
+    try {
+        const response = await fetch(`${BASE_URL}/users/${currentUser.email}/expenses`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount, date, category, description })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showMessage('Expense added successfully!', 'success');
+            document.getElementById('add-expense-form').reset();
+            toggleAddExpenseForm();
+        } else {
+            showMessage(result.data || 'Failed to add expense', 'error');
+        }
+    } catch (error) {
+        showMessage('Error adding expense', 'error');
+    }
+});
