@@ -291,5 +291,43 @@ async function updateExpense(expenseId) {
             return;
         }
 
+        document.getElementById('update-expense-id').value = expenseId;
+        document.getElementById('update-expense-amount').value = expense.amount;
+        document.getElementById('update-expense-date').value = new Date(expense.date).toISOString().slice(0, 16);
+        document.getElementById('update-expense-category').value = expense.category;
+        document.getElementById('update-expense-description').value = expense.description;
+        document.getElementById('update-expense-form-container').classList.remove('hidden');
+    } catch (error) {
+        showMessage(`Error loading update form: ${error.message}`, 'error');
+    }
+}
+
+document.getElementById('update-expense-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const expenseId = document.getElementById('update-expense-id').value;
+    const amount = parseFloat(document.getElementById('update-expense-amount').value);
+    const date = document.getElementById('update-expense-date').value + ':00';
+    const category = document.getElementById('update-expense-category').value;
+    const description = document.getElementById('update-expense-description').value;
+    try {
+        const response = await fetch(`${BASE_URL}/expenses/update/${expenseId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount, date, category, description })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showMessage('Expense updated successfully!', 'success');
+            document.getElementById('update-expense-form-container').classList.add('hidden');
+            document.getElementById('update-expense-form').reset();
+            getAllExpenses();
+        } else {
+            showMessage(result.data || 'Failed to update expense', 'error');
+        }
+    } catch (error) {
+        showMessage('Error updating expense', 'error');
+    }
+});
+
 
 showRegister();
