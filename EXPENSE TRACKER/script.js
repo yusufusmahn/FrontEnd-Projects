@@ -171,3 +171,57 @@ document.getElementById('add-expense-form').addEventListener('submit', async (e)
         showMessage('Error adding expense', 'error');
     }
 });
+
+async function getTotalExpenses() {
+    try {
+        const response = await fetch(`${BASE_URL}/expenses/total/${currentUser.userId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (result.success) {
+            document.getElementById('total-result').textContent = `Total: $${result.data.toFixed(2)}`;
+            document.getElementById('total-result').style.display = 'block';
+        } else {
+            showMessage(result.data || 'Failed to fetch total', 'error');
+        }
+    } catch (error) {
+        showMessage('Error fetching total', 'error');
+    }
+}
+
+async function getAllExpenses() {
+    try {
+        const response = await fetch(`${BASE_URL}/expenses/byUser/${currentUser.userId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (result.success) {
+            const tbody = document.getElementById('expenses-tbody');
+            tbody.innerHTML = '';
+            if (result.data.length === 0) {
+                showMessage('No expenses found', 'error');
+            }
+            result.data.forEach(expense => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>$${expense.amount.toFixed(2)}</td>
+                    <td>${new Date(expense.date).toLocaleString()}</td>
+                    <td>${expense.category}</td>
+                    <td>${expense.description || ''}</td>
+                    <td>
+                        <button onclick="updateExpense('${expense.id}')">Update</button>
+                        <button onclick="deleteExpense('${expense.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('expenses-table').style.display = 'table';
+        } else {
+            showMessage(result.data || 'Failed to fetch expenses', 'error');
+        }
+    } catch (error) {
+        showMessage('Error fetching expenses', 'error');
+    }
+}
