@@ -225,3 +225,71 @@ async function getAllExpenses() {
         showMessage('Error fetching expenses', 'error');
     }
 }
+
+document.getElementById('search-expense-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const category = document.getElementById('search-category').value;
+    const url = category
+        ? `${BASE_URL}/expenses/search/${currentUser.userId}?category=${encodeURIComponent(category)}`
+        : `${BASE_URL}/expenses/byUser/${currentUser.userId}`;
+    try {
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+        if (result.success) {
+            const tbody = document.getElementById('search-tbody');
+            tbody.innerHTML = '';
+            if (result.data.length === 0) {
+                showMessage('No expenses found', 'error');
+            }
+            result.data.forEach(expense => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>$${expense.amount.toFixed(2)}</td>
+                    <td>${new Date(expense.date).toLocaleString()}</td>
+                    <td>${expense.category}</td>
+                    <td>${expense.description || ''}</td>
+                    <td>
+                        <button onclick="updateExpense('${expense.id}')">Update</button>
+                        <button onclick="deleteExpense('${expense.id}')">Delete</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('search-table').style.display = 'table';
+        } else {
+            showMessage(result.data || 'Failed to search expenses', 'error');
+        }
+    } catch (error) {
+        showMessage('Error searching expenses', 'error');
+    }
+});
+
+async function updateExpense(expenseId) {
+    try {
+        const response = await fetch(`${BASE_URL}/expenses/${expenseId}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+            showMessage(result.data || 'Failed to fetch expense', 'error');
+            return;
+        }
+
+        const expense = result.data;
+        if (!expense) {
+            showMessage('Expense not found', 'error');
+            return;
+        }
+
+        if (expense.userId !== currentUser.userId) {
+            showMessage('Unauthorized to update this expense', 'error');
+            return;
+        }
+
+
+showRegister();
