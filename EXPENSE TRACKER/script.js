@@ -100,4 +100,13 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             body: JSON.stringify(requestBody)
         });
         const result = await response.json();
-       
+        if (result.success) {
+            showMessage('Registration successful! Please login.', 'success');
+            showLogin();
+        } else {
+            showMessage(result.data || 'Failed to register user', 'error');
+        }
+    } catch (error) {
+        showMessage(`Error registering user: ${error.message}`, 'error');
+    }
+});
