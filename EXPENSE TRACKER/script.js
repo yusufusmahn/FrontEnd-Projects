@@ -329,5 +329,24 @@ document.getElementById('update-expense-form').addEventListener('submit', async 
     }
 });
 
+async function deleteExpense(expenseId) {
+    if (confirm('Are you sure you want to delete this expense?')) {
+        try {
+            const response = await fetch(`${BASE_URL}/expenses/delete/${expenseId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const result = await response.json();
+            if (result.success) {
+                showMessage('Expense deleted successfully!', 'success');
+                getAllExpenses();
+            } else {
+                showMessage(result.data || 'Failed to delete expense', 'error');
+            }
+        } catch (error) {
+            showMessage('Error deleting expense', 'error');
+        }
+    }
+}
 
 showRegister();
